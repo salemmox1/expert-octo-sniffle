@@ -46,7 +46,7 @@ jobs:
         run: |
           # محاكاة إدخال سكريبت التوليد:
           # 3 (وضع الدولة) -> كود الدولة -> 2 (استخراج عينات) -> العدد -> n (بدون بينج هنا لتوفير الوقت)
-          printf "3\n${{ github.event.inputs.country_code }}\n2\n${{ github.event.inputs.limit_per_block }}\nn\n" | python main.py
+          printf "3\n${{ github.event.inputs.country_code }}\n1\n${{ github.event.inputs.limit_per_block }}\nn\n" | python main.py
           echo "✅ IPs Generated in IP.txt"
 
       - name: Scan IPs (Go)
