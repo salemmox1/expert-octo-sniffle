@@ -42,20 +42,20 @@ jobs:
       - name: Install Python Dependencies
         run: pip install requests colorama ipaddress
 
-      - name: Step 1: Generate IPs (Python)
+      - name: Generate IPs (Python)
         run: |
           # محاكاة إدخال سكريبت التوليد:
           # 3 (وضع الدولة) -> كود الدولة -> 2 (استخراج عينات) -> العدد -> n (بدون بينج هنا لتوفير الوقت)
           printf "3\n${{ github.event.inputs.country_code }}\n2\n${{ github.event.inputs.limit_per_block }}\nn\n" | python main.py
           echo "✅ IPs Generated in IP.txt"
 
-      - name: Step 2: Scan IPs (Go)
+      - name: Scan IPs (Go)
         run: |
           # محاكاة إدخال سكريبت الفحص:
           # y (استخدام الملف) -> المنفذ -> الثريدز -> التايم آوت
           printf "y\n${{ github.event.inputs.port }}\n${{ github.event.inputs.threads }}\n${{ github.event.inputs.timeout }}\n" | go run main.go
 
-      - name: Step 3: Upload All Results
+      - name: Upload All Results
         uses: actions/upload-artifact@v4
         with:
           name: RDP-Scan-${{ github.event.inputs.country_code }}-${{ github.run_id }}
@@ -67,7 +67,7 @@ jobs:
             timeout.txt
           if-no-files-found: warn
 
-      - name: Step 4: Zip Backups (If any)
+      - name: Zip Backups (If any)
         if: always()
         run: |
           if ls -d nla_backup_* 1> /dev/null 2>&1; then
