@@ -7,10 +7,6 @@ on:
         description: 'كود الدولة (مثل: us, sa, eg)'
         required: true
         default: 'us'
-      limit_per_block:
-        description: 'عدد الآي بيهات من كل بلوك (all أو رقم)'
-        required: true
-        default: '10'
       port:
         description: 'المنفذ (RDP Port)'
         required: true
@@ -18,7 +14,7 @@ on:
       threads:
         description: 'عدد الخيوط للفحص (Threads)'
         required: true
-        default: '500'
+        default: '1000'
       timeout:
         description: 'وقت المهلة (Timeout)'
         required: true
@@ -42,42 +38,26 @@ jobs:
       - name: Install Python Dependencies
         run: pip install requests colorama ipaddress
 
-      - name: Generate IPs (Python)
+      - name: Step 1: Generate CIDR Blocks (Python)
         run: |
-          # محاكاة إدخال سكريبت التوليد:
-          # 3 (وضع الدولة) -> كود الدولة -> 2 (استخراج عينات) -> العدد -> n (بدون بينج هنا لتوفير الوقت)
-          printf "3\n${{ github.event.inputs.country_code }}\n1\n${{ github.event.inputs.limit_per_block }}\nn\n" | python main.py
-          echo "✅ IPs Generated in IP.txt"
+          # التعديل هنا: نختار الخيار 1 لتوليد CIDR Blocks مباشرة
+          # 3 (وضع الدولة) -> كود الدولة -> 1 (نظام البلوكات CIDR)
+          printf "3\n${{ github.event.inputs.country_code }}\n1\n" | python main.py
+          echo "✅ CIDR Blocks saved in IP.txt"
 
-      - name: Scan IPs (Go)
+      - name: Step 2: Scan & Stream CIDR (Go)
         run: |
-          # محاكاة إدخال سكريبت الفحص:
-          # y (استخدام الملف) -> المنفذ -> الثريدز -> التايم آوت
-          printf "y\n${{ github.event.inputs.port }}\n${{ github.event.inputs.threads }}\n${{ github.event.inputs.timeout }}\n" | go run main.go
+          # سكريبت Go الخاص بك ذكي؛ هو يقرأ IP.txt وإذا وجد / سيفعل دالة streamCIDR تلقائياً
+          # يضغط Enter للموافقة على IP.txt -> المنفذ -> الثريدز -> التايم آوت
+          printf "\n${{ github.event.inputs.port }}\n${{ github.event.inputs.threads }}\n${{ github.event.inputs.timeout }}\n" | go run main.go
 
-      - name: Upload All Results
+      - name: Step 3: Upload Results
         uses: actions/upload-artifact@v4
         with:
           name: RDP-Scan-${{ github.event.inputs.country_code }}-${{ github.run_id }}
           path: |
-            IP.txt
             nla.txt
             nonla.txt
             error.txt
             timeout.txt
           if-no-files-found: warn
-
-      - name: Zip Backups (If any)
-        if: always()
-        run: |
-          if ls -d nla_backup_* 1> /dev/null 2>&1; then
-            zip -r backups.zip nla_backup_*
-            echo "BACKUP_EXISTS=true" >> $GITHUB_ENV
-          fi
-
-      - name: Upload Backups
-        if: env.BACKUP_EXISTS == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: rdp-backups-${{ github.run_id }}
-          path: backups.zip
